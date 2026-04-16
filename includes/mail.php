@@ -122,10 +122,29 @@ function mail_gonder_smtp(string $to, string $toName, string $konu, string $icer
     }
 
     // Mail gonder
-    $cmd("MAIL FROM: <$fromEmail>");
-    $cmd("RCPT TO: <$to>");
+    $resp = $cmd("MAIL FROM: <$fromEmail>");
+    if (strpos($resp, '250') !== 0) {
+        fclose($socket);
+        return ['success' => false, 'message' => 'MAIL FROM hatası: ' . trim($resp)];
+    }
+
+    $resp = $cmd("RCPT TO: <$to>");
+    if (strpos($resp, '250') !== 0 && strpos($resp, '251') !== 0) {
+        $cmd('QUIT');
+        fclose($socket);
+        // Kullaniciya anlamli mesaj
+        if (strpos($resp, '550') === 0 || strpos($resp, '553') === 0 || strpos($resp, '503') === 0) {
+            return ['success' => false, 'message' => 'Alıcı e-posta adresi geçersiz veya reddedildi: ' . trim($resp)];
+        }
+        if (strpos($resp, '554') === 0) {
+            return ['success' => false, 'message' => 'E-posta gönderimi engellendi (spam filtresi): ' . trim($resp)];
+        }
+        return ['success' => false, 'message' => 'Alıcı kabul edilmedi: ' . trim($resp)];
+    }
+
     $resp = $cmd('DATA');
     if (strpos($resp, '354') !== 0) {
+        $cmd('QUIT');
         fclose($socket);
         return ['success' => false, 'message' => 'DATA hatası: ' . trim($resp)];
     }

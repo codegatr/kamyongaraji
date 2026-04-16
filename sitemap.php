@@ -25,6 +25,22 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         <priority>0.95</priority>
     </url>
     <url>
+        <loc><?= SITE_URL ?>/uyeler.php</loc>
+        <lastmod><?= date('Y-m-d') ?></lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc><?= SITE_URL ?>/uyeler.php?tip=tasiyici</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.75</priority>
+    </url>
+    <url>
+        <loc><?= SITE_URL ?>/uyeler.php?tip=isveren</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.75</priority>
+    </url>
+    <url>
         <loc><?= SITE_URL ?>/nasil-calisir.php</loc>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>

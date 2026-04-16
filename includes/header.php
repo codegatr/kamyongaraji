@@ -100,6 +100,7 @@ $metaKeywords = $metaKeywords ?? 'yük ilanı, nakliye, kamyon, taşıma, lojist
             <nav class="main-nav">
                 <a href="<?= SITE_URL ?>/" class="<?= $currentPage==='index'?'active':'' ?>">Ana Sayfa</a>
                 <a href="<?= SITE_URL ?>/ilanlar.php" class="<?= $currentPage==='ilanlar'?'active':'' ?>">İlanlar</a>
+                <a href="<?= SITE_URL ?>/uyeler.php" class="<?= $currentPage==='uyeler'?'active':'' ?>">Üyeler</a>
                 <a href="<?= SITE_URL ?>/nasil-calisir.php" class="<?= $currentPage==='nasil-calisir'?'active':'' ?>">Nasıl Çalışır?</a>
                 <a href="<?= SITE_URL ?>/iletisim.php" class="<?= $currentPage==='iletisim'?'active':'' ?>">İletişim</a>
             </nav>

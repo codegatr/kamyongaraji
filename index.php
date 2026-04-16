@@ -209,6 +209,100 @@ $bannerAktif = !empty($kullaniciSehri)
     </div>
 </section>
 
+<!-- Guvenilir Uyeler Vitrin -->
+<?php
+try {
+    $topTasiyici = db_fetch_all("
+        SELECT ad_soyad, firma_adi, sehir, puan_ortalama, yorum_sayisi,
+               sms_dogrulandi, tc_dogrulandi, vergi_dogrulandi
+        FROM kg_users
+        WHERE user_type = 'tasiyici' AND durum = 'aktif'
+          AND puan_ortalama > 0 AND yorum_sayisi >= 1
+        ORDER BY puan_ortalama DESC, yorum_sayisi DESC
+        LIMIT 4
+    ");
+} catch (Exception $e) { $topTasiyici = []; }
+
+if (!empty($topTasiyici)):
+
+    // Helper - ana sayfada tanimla
+    if (!function_exists('home_isim_maskele')) {
+        function home_isim_maskele(string $ad): string {
+            $p = preg_split('/\s+/', trim($ad));
+            $sonuc = [];
+            foreach ($p as $i => $k) {
+                if ($i === 0) $sonuc[] = $k;
+                else $sonuc[] = mb_substr($k, 0, 1, 'UTF-8') . str_repeat('*', max(3, mb_strlen($k, 'UTF-8') - 1));
+            }
+            return implode(' ', $sonuc);
+        }
+    }
+?>
+<section class="section" style="background:linear-gradient(180deg,#F8FAFC 0%,white 100%);padding-top:40px;">
+    <div class="container">
+        <div class="d-flex justify-between align-center mb-3" style="flex-wrap:wrap;gap:16px;">
+            <div>
+                <h2 style="margin-bottom:4px;"><i class="fa-solid fa-medal" style="color:#FFD700;"></i> En Güvenilir Taşıyıcılar</h2>
+                <p class="text-muted mb-0">En yüksek puan alan ve onaylı taşıyıcılarımız</p>
+            </div>
+            <a href="<?= SITE_URL ?>/uyeler.php" class="btn btn-outline">
+                Tüm Üyeleri Gör <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-4" style="gap:16px;">
+            <?php foreach ($topTasiyici as $sira => $u):
+                $adMaskeli = !empty($u['firma_adi']) ? home_isim_maskele($u['firma_adi']) : home_isim_maskele($u['ad_soyad']);
+                $ilkHarf = mb_substr($u['firma_adi'] ?: $u['ad_soyad'], 0, 1, 'UTF-8');
+                $madalya = ['#FFD700','#C0C0C0','#CD7F32','#9CA3AF'];
+            ?>
+            <div class="card" style="padding:18px;text-align:center;position:relative;border:1px solid var(--border);">
+                <?php if ($sira < 3): ?>
+                <div style="position:absolute;top:-10px;right:-10px;width:34px;height:34px;background:<?= $madalya[$sira] ?>;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9375rem;box-shadow:0 4px 10px rgba(0,0,0,0.15);">
+                    <?= $sira + 1 ?>
+                </div>
+                <?php endif; ?>
+
+                <div style="width:64px;height:64px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:white;display:flex;align-items:center;justify-content:center;font-size:1.625rem;font-weight:800;">
+                    <?= e($ilkHarf) ?>
+                </div>
+
+                <div style="font-weight:700;font-size:0.9375rem;margin-bottom:4px;line-height:1.3;"><?= e($adMaskeli) ?></div>
+
+                <?php if ($u['sehir']): ?>
+                    <div class="text-muted" style="font-size:0.8125rem;margin-bottom:10px;">
+                        <i class="fa-solid fa-location-dot"></i> <?= e($u['sehir']) ?>
+                    </div>
+                <?php endif; ?>
+
+                <div style="color:#FFB400;font-size:1rem;margin-bottom:4px;">
+                    <?php
+                    $puan = (float)$u['puan_ortalama'];
+                    $dolu = floor($puan);
+                    $yarim = ($puan - $dolu) >= 0.5;
+                    for ($i = 0; $i < 5; $i++) {
+                        if ($i < $dolu) echo '<i class="fa-solid fa-star"></i>';
+                        elseif ($i == $dolu && $yarim) echo '<i class="fa-solid fa-star-half-stroke"></i>';
+                        else echo '<i class="fa-regular fa-star"></i>';
+                    }
+                    ?>
+                </div>
+                <div style="font-size:0.8125rem;color:var(--text-muted);">
+                    <strong style="color:var(--text);"><?= number_format($u['puan_ortalama'], 1) ?></strong> · <?= $u['yorum_sayisi'] ?> yorum
+                </div>
+
+                <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:10px;">
+                    <?php if ($u['sms_dogrulandi']): ?><span style="font-size:0.6875rem;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-mobile-screen"></i></span><?php endif; ?>
+                    <?php if ($u['tc_dogrulandi']): ?><span style="font-size:0.6875rem;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-id-card"></i></span><?php endif; ?>
+                    <?php if ($u['vergi_dogrulandi']): ?><span style="font-size:0.6875rem;background:#E0E7FF;color:#3730A3;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-building"></i></span><?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
 <!-- Nasil Calisir -->
 <section class="section" style="background: white;">
     <div class="container">
