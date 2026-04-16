@@ -51,7 +51,7 @@ if (is_post() && csrf_verify(post('csrf_token'))) {
             db_update('kg_users', ['password' => password_hash($yeniSifre, PASSWORD_DEFAULT)], 'id = :id', ['id' => $id]);
             $target = db_fetch("SELECT email FROM kg_users WHERE id = :id", ['id' => $id]);
             log_action('admin_sifre_sifirla', 'kg_users', $id);
-            flash_add('success', "Yeni şifre: <code style='background:#FEF3C7;padding:2px 8px;border-radius:4px;font-family:monospace;'>$yeniSifre</code> — {$target['email']} hesabına bildirin, ilk girişte değiştirmelerini söyleyin.");
+            flash_add('success', "Yeni şifre: <code>" . e($yeniSifre) . "</code> — " . e($target['email']) . " hesabına bildirin, ilk girişte değiştirmelerini söyleyin.", true);
         }
     }
 

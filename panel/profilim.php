@@ -96,7 +96,7 @@ if (is_post() && post('islem') === 'email_degistir') {
                     // Eski adrese mail gitmese de islem devam etsin
                 }
 
-                flash_add('success', 'E-posta adresiniz değiştirildi: <strong>' . e($yeniEmail) . '</strong>. Lütfen yeni adresinize gelecek doğrulama mailini bekleyin, "Doğrula" butonuna basabilirsiniz.');
+                flash_add('success', 'E-posta adresiniz değiştirildi: <strong>' . e($yeniEmail) . '</strong>. Lütfen yeni adresinize gelecek doğrulama mailini bekleyin, "Doğrula" butonuna basabilirsiniz.', true);
                 redirect($_SERVER['REQUEST_URI']);
             }
         }

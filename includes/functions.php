@@ -125,11 +125,11 @@ function json_error(string $message = 'Bir hata oluştu', int $code = 400, array
 /**
  * Flash mesaj ekle
  */
-function flash_add(string $type, string $message): void {
+function flash_add(string $type, string $message, bool $allowHtml = false): void {
     if (!isset($_SESSION['flash'])) {
         $_SESSION['flash'] = [];
     }
-    $_SESSION['flash'][] = ['type' => $type, 'message' => $message];
+    $_SESSION['flash'][] = ['type' => $type, 'message' => $message, 'html' => $allowHtml];
 }
 
 /**
@@ -142,12 +142,16 @@ function flash_get(): array {
 }
 
 /**
- * Flash render
+ * Flash render - HTML'e izin verilmis mesajlarda sadece guvenli etiketler
  */
 function flash_render(): string {
     $messages = flash_get();
     if (empty($messages)) return '';
     $html = '';
+
+    // Guvenli HTML tag'leri (XSS'e yol acmaz)
+    $allowedTags = '<strong><b><em><i><u><br><a><code><small>';
+
     foreach ($messages as $m) {
         $class = match($m['type']) {
             'success' => 'alert-success',
@@ -155,7 +159,23 @@ function flash_render(): string {
             'warning' => 'alert-warning',
             default => 'alert-info'
         };
-        $html .= '<div class="alert ' . $class . '">' . e($m['message']) . '</div>';
+
+        $msg = $m['message'];
+        if (!empty($m['html'])) {
+            // HTML izinli - sadece guvenli tag'lere izin ver + href sanitize
+            $msg = strip_tags($msg, $allowedTags);
+            // a href'lerde sadece http(s) ve relatif URL'ler
+            $msg = preg_replace_callback('/<a\s+href=["\']([^"\']+)["\'][^>]*>/i', function($m) {
+                $url = $m[1];
+                if (!preg_match('~^(https?://|/|mailto:)~i', $url)) return '';
+                return '<a href="' . htmlspecialchars($url, ENT_QUOTES) . '" target="_blank" rel="noopener">';
+            }, $msg);
+        } else {
+            // Varsayilan: tam escape
+            $msg = e($msg);
+        }
+
+        $html .= '<div class="alert ' . $class . '">' . $msg . '</div>';
     }
     return $html;
 }
