@@ -19,17 +19,23 @@ $lokasyonAktif = false;
 
 // Manuel alim/teslim varsa veya ?tum=1 gelmisse otomatik lokasyon kullanma
 if (!$alim && !$teslim && !$lokasyonSehir && empty($_GET['tum'])) {
-    // Otomatik: kullanicinin lokasyonunu al
-    $auto = kullanici_lokasyon();
-    if (!empty($auto['sehir']) && $auto['kaynak'] !== 'varsayilan') {
-        // Sadece bu sehirdeki ilan varsa otomatik filtrele
-        $sayi = db_fetch("SELECT COUNT(*) AS c FROM kg_ilanlar
-                          WHERE durum = 'aktif' AND (alim_sehir = :s1 OR teslim_sehir = :s2)",
-                          ['s1' => $auto['sehir'], 's2' => $auto['sehir']]);
-        if ((int)($sayi['c'] ?? 0) > 0) {
-            $lokasyonSehir = $auto['sehir'];
-            $lokasyonAktif = true;
+    try {
+        // Otomatik: kullanicinin lokasyonunu al
+        $auto = kullanici_lokasyon();
+        if (!empty($auto['sehir']) && $auto['kaynak'] !== 'varsayilan') {
+            // Sadece bu sehirdeki ilan varsa otomatik filtrele
+            $sayi = db_fetch("SELECT COUNT(*) AS c FROM kg_ilanlar
+                              WHERE durum = 'aktif' AND (alim_sehir = :s1 OR teslim_sehir = :s2)",
+                              ['s1' => $auto['sehir'], 's2' => $auto['sehir']]);
+            if ((int)($sayi['c'] ?? 0) > 0) {
+                $lokasyonSehir = $auto['sehir'];
+                $lokasyonAktif = true;
+            }
         }
+    } catch (Throwable $e) {
+        // Lokasyon hatasi olsa da ilanlar listelenebilsin
+        $lokasyonSehir = '';
+        $lokasyonAktif = false;
     }
 }
 

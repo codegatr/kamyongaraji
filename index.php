@@ -4,22 +4,34 @@ require_once __DIR__ . '/includes/init.php';
 $pageTitle = sayfa_basligi();
 $metaDesc = ayar('site_aciklama');
 
-// Kullanici lokasyonunu tespit et
-$lokasyon = kullanici_lokasyon();
-$kullaniciSehri = $lokasyon['sehir'];
-
-// Sehirdeki ilanlar (varsa)
+// Kullanici lokasyonunu tespit et (hata olsa bile ana sayfa cokmesin)
+$lokasyon = ['sehir' => null, 'plaka' => null, 'kaynak' => 'varsayilan', 'ip' => '', 'koordinat' => null];
+$kullaniciSehri = null;
 $sehirIlanlari = [];
-if ($kullaniciSehri) {
-    $sehirIlanlari = db_fetch_all("
-        SELECT i.*, u.ad_soyad, u.firma_adi, u.puan_ortalama, u.yorum_sayisi
-        FROM kg_ilanlar i
-        LEFT JOIN kg_users u ON u.id = i.user_id
-        WHERE i.durum = 'aktif'
-          AND (i.alim_sehir = :s1 OR i.teslim_sehir = :s2)
-        ORDER BY i.ozellikli DESC, i.oncelikli_listeme DESC, i.yayin_tarihi DESC
-        LIMIT 8
-    ", ['s1' => $kullaniciSehri, 's2' => $kullaniciSehri]);
+
+try {
+    $lokasyon = kullanici_lokasyon();
+    $kullaniciSehri = $lokasyon['sehir'];
+
+    // Sehirdeki ilanlar (varsa)
+    if ($kullaniciSehri) {
+        $sehirIlanlari = db_fetch_all("
+            SELECT i.*, u.ad_soyad, u.firma_adi, u.puan_ortalama, u.yorum_sayisi
+            FROM kg_ilanlar i
+            LEFT JOIN kg_users u ON u.id = i.user_id
+            WHERE i.durum = 'aktif'
+              AND (i.alim_sehir = :s1 OR i.teslim_sehir = :s2)
+            ORDER BY i.ozellikli DESC, i.oncelikli_listeme DESC, i.yayin_tarihi DESC
+            LIMIT 8
+        ", ['s1' => $kullaniciSehri, 's2' => $kullaniciSehri]);
+    }
+} catch (Throwable $e) {
+    // Lokasyon veya sorgu hatasi ana sayfayi etkilemesin
+    if (defined('DEBUG_MODE') && DEBUG_MODE) {
+        error_log('Index lokasyon hatasi: ' . $e->getMessage());
+    }
+    $kullaniciSehri = null;
+    $sehirIlanlari = [];
 }
 
 // Genel son ilanlar (sehir ilani yoksa veya her durumda altinda gosterilir)

@@ -31,54 +31,63 @@ function kullanici_lokasyon(bool $forceRefresh = false): array
         'sehir' => null,
         'plaka' => null,
         'kaynak' => 'varsayilan',
-        'ip' => get_ip(),
+        'ip' => function_exists('get_ip') ? get_ip() : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
         'koordinat' => null
     ];
 
-    // 1. Cookie kontrolu (kullanici daha onceden sehir sectiyse)
-    $cookieName = 'kg_sehir';
-    if (!empty($_COOKIE[$cookieName])) {
-        $cookieSehir = clean($_COOKIE[$cookieName]);
-        $sehirInfo = sehir_bilgisi($cookieSehir);
-        if ($sehirInfo) {
-            $result['sehir'] = $sehirInfo['ad'];
-            $result['plaka'] = $sehirInfo['plaka'];
-            $result['kaynak'] = 'cookie';
-            $result['koordinat'] = $sehirInfo['koordinat'];
-            $_LOCATION_CACHE = $result;
-            return $result;
-        }
-    }
-
-    // 2. Giris yapmissa profil sehri
-    if (giris_yapmis() && !empty($_SESSION['user_id'])) {
-        $u = db_fetch("SELECT sehir FROM kg_users WHERE id = :id", ['id' => $_SESSION['user_id']]);
-        if ($u && !empty($u['sehir'])) {
-            $sehirInfo = sehir_bilgisi($u['sehir']);
+    // Tum lokasyon mantigini try-catch ile sar - migration yapilmamis olsa bile
+    // ana sayfa asla patlamasin
+    try {
+        // 1. Cookie kontrolu (kullanici daha onceden sehir sectiyse)
+        $cookieName = 'kg_sehir';
+        if (!empty($_COOKIE[$cookieName])) {
+            $cookieSehir = function_exists('clean') ? clean($_COOKIE[$cookieName]) : htmlspecialchars(trim($_COOKIE[$cookieName]));
+            $sehirInfo = sehir_bilgisi($cookieSehir);
             if ($sehirInfo) {
                 $result['sehir'] = $sehirInfo['ad'];
                 $result['plaka'] = $sehirInfo['plaka'];
-                $result['kaynak'] = 'profil';
+                $result['kaynak'] = 'cookie';
                 $result['koordinat'] = $sehirInfo['koordinat'];
                 $_LOCATION_CACHE = $result;
                 return $result;
             }
         }
-    }
 
-    // 3. GeoIP (ip-api.com + cache)
-    if ((int)ayar('lokasyon_geoip_aktif', 1) === 1) {
-        $geoSehir = geoip_sehir_bul($result['ip']);
-        if ($geoSehir) {
-            $sehirInfo = sehir_bilgisi($geoSehir);
-            if ($sehirInfo) {
-                $result['sehir'] = $sehirInfo['ad'];
-                $result['plaka'] = $sehirInfo['plaka'];
-                $result['kaynak'] = 'geoip';
-                $result['koordinat'] = $sehirInfo['koordinat'];
-                $_LOCATION_CACHE = $result;
-                return $result;
+        // 2. Giris yapmissa profil sehri
+        if (function_exists('giris_yapmis') && giris_yapmis() && !empty($_SESSION['user_id'])) {
+            $u = db_fetch("SELECT sehir FROM kg_users WHERE id = :id", ['id' => $_SESSION['user_id']]);
+            if ($u && !empty($u['sehir'])) {
+                $sehirInfo = sehir_bilgisi($u['sehir']);
+                if ($sehirInfo) {
+                    $result['sehir'] = $sehirInfo['ad'];
+                    $result['plaka'] = $sehirInfo['plaka'];
+                    $result['kaynak'] = 'profil';
+                    $result['koordinat'] = $sehirInfo['koordinat'];
+                    $_LOCATION_CACHE = $result;
+                    return $result;
+                }
             }
+        }
+
+        // 3. GeoIP (ip-api.com + cache) - opsiyonel, hata olursa sessiz gec
+        if (function_exists('ayar') && (int)ayar('lokasyon_geoip_aktif', 1) === 1) {
+            $geoSehir = geoip_sehir_bul($result['ip']);
+            if ($geoSehir) {
+                $sehirInfo = sehir_bilgisi($geoSehir);
+                if ($sehirInfo) {
+                    $result['sehir'] = $sehirInfo['ad'];
+                    $result['plaka'] = $sehirInfo['plaka'];
+                    $result['kaynak'] = 'geoip';
+                    $result['koordinat'] = $sehirInfo['koordinat'];
+                    $_LOCATION_CACHE = $result;
+                    return $result;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        // Herhangi bir hata olursa varsayilana dus - sessiz gec
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log('Lokasyon hatasi: ' . $e->getMessage());
         }
     }
 
@@ -89,27 +98,52 @@ function kullanici_lokasyon(bool $forceRefresh = false): array
 
 /**
  * Sehir bilgisini DB'den getir (plaka, enlem, boylam, komsular)
+ * Kolon yoksa (migration yapilmamis) null degerler doner
  */
 function sehir_bilgisi(string $ad): ?array
 {
+    if (empty($ad)) return null;
+
     // Turkce karakter normalize
     $normal = sehir_normalize($ad);
-    $row = db_fetch("
-        SELECT plaka, ad, enlem, boylam, komsu_iller
-        FROM kg_sehirler
-        WHERE ad = :a OR LOWER(ad) = :b
-        LIMIT 1
-    ", ['a' => $normal, 'b' => mb_strtolower($normal)]);
+
+    try {
+        // Once tum kolonlarla dene (migration yapilmissa)
+        $row = db_fetch("
+            SELECT plaka, ad, enlem, boylam, komsu_iller
+            FROM kg_sehirler
+            WHERE ad = :a OR LOWER(ad) = :b
+            LIMIT 1
+        ", ['a' => $normal, 'b' => mb_strtolower($normal)]);
+    } catch (Throwable $e) {
+        // Migration yapilmamis, fallback: sadece plaka ve ad
+        try {
+            $row = db_fetch("
+                SELECT plaka, ad
+                FROM kg_sehirler
+                WHERE ad = :a OR LOWER(ad) = :b
+                LIMIT 1
+            ", ['a' => $normal, 'b' => mb_strtolower($normal)]);
+            if ($row) {
+                $row['enlem'] = null;
+                $row['boylam'] = null;
+                $row['komsu_iller'] = null;
+            }
+        } catch (Throwable $e2) {
+            return null;
+        }
+    }
 
     if (!$row) return null;
+
     return [
         'plaka' => (int)$row['plaka'],
         'ad' => $row['ad'],
         'koordinat' => [
-            'enlem' => $row['enlem'] ? (float)$row['enlem'] : null,
-            'boylam' => $row['boylam'] ? (float)$row['boylam'] : null
+            'enlem' => !empty($row['enlem']) ? (float)$row['enlem'] : null,
+            'boylam' => !empty($row['boylam']) ? (float)$row['boylam'] : null
         ],
-        'komsu_iller' => $row['komsu_iller'] ? explode(',', $row['komsu_iller']) : []
+        'komsu_iller' => !empty($row['komsu_iller']) ? explode(',', $row['komsu_iller']) : []
     ];
 }
 
@@ -142,39 +176,48 @@ function sehir_normalize(string $ad): string
 
 /**
  * IP'den sehir bulma - cache'li
+ * kg_ip_cache tablosu yoksa cache'siz calisir
  */
 function geoip_sehir_bul(string $ip): ?string
 {
     // Yerel/local IP kontrolu
-    if ($ip === '127.0.0.1' || $ip === '::1'
+    if (empty($ip) || $ip === '127.0.0.1' || $ip === '::1'
         || strpos($ip, '192.168.') === 0
         || strpos($ip, '10.') === 0
         || strpos($ip, '172.') === 0) {
         return null;
     }
 
-    // Cache kontrolu (30 gun)
-    $cache = db_fetch("
-        SELECT sehir, kaynak FROM kg_ip_cache
-        WHERE ip = :ip AND gecerlilik > NOW()
-        LIMIT 1
-    ", ['ip' => $ip]);
+    // Cache kontrolu (30 gun) - tablo yoksa atla
+    try {
+        $cache = db_fetch("
+            SELECT sehir, kaynak FROM kg_ip_cache
+            WHERE ip = :ip AND gecerlilik > NOW()
+            LIMIT 1
+        ", ['ip' => $ip]);
 
-    if ($cache) {
-        return $cache['sehir'] ?: null;
+        if ($cache) {
+            return $cache['sehir'] ?: null;
+        }
+    } catch (Throwable $e) {
+        // kg_ip_cache tablosu yok - migration yapilmamis, cache'siz devam et
     }
 
     // API cagrisi
-    $servis = ayar('lokasyon_geoip_servis', 'ip-api');
+    $servis = function_exists('ayar') ? ayar('lokasyon_geoip_servis', 'ip-api') : 'ip-api';
     $sehir = null;
 
-    switch ($servis) {
-        case 'ip-api':
-            $sehir = geoip_ipapi($ip);
-            break;
-        case 'ipapi-co':
-            $sehir = geoip_ipapico($ip);
-            break;
+    try {
+        switch ($servis) {
+            case 'ip-api':
+                $sehir = geoip_ipapi($ip);
+                break;
+            case 'ipapi-co':
+                $sehir = geoip_ipapico($ip);
+                break;
+        }
+    } catch (Throwable $e) {
+        return null;
     }
 
     // Cache'e yaz (sonuc bos bile olsa - tekrar sormayalim)
@@ -187,8 +230,8 @@ function geoip_sehir_bul(string $ip): ?string
                 kaynak = VALUES(kaynak),
                 gecerlilik = VALUES(gecerlilik)
         ", ['ip' => $ip, 's' => $sehir, 'k' => $servis]);
-    } catch (Exception $e) {
-        // Silent fail
+    } catch (Throwable $e) {
+        // Tablo yoksa atla
     }
 
     return $sehir;
