@@ -1,18 +1,20 @@
-User-agent: *
-Allow: /
-Allow: /ilanlar.php
-Allow: /ilan.php
-Allow: /sayfa.php
-Allow: /nasil-calisir.php
-Allow: /iletisim.php
-Allow: /assets/
+# ==========================================
+# Kamyon Garaji - robots.txt
+# https://kamyongaraji.org
+# ==========================================
 
+# Google Bot - Tam erisim
+User-agent: Googlebot
+Allow: /
 Disallow: /admin/
 Disallow: /ajax/
 Disallow: /api/
 Disallow: /cron/
 Disallow: /includes/
+Disallow: /migrations/
 Disallow: /yedekler/
+Disallow: /cache/
+Disallow: /tmp/
 Disallow: /panel.php
 Disallow: /panel/
 Disallow: /giris.php
@@ -26,5 +28,168 @@ Disallow: /ilan-duzenle.php
 Disallow: /config.php
 Disallow: /install.sql
 Disallow: /manifest.json
+Crawl-delay: 1
 
+# Googlebot Images
+User-agent: Googlebot-Image
+Allow: /assets/uploads/
+Allow: /assets/img/
+Disallow: /admin/
+Disallow: /includes/
+
+# Google AdsBot
+User-agent: AdsBot-Google
+Allow: /
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /cron/
+Disallow: /includes/
+Disallow: /migrations/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /giris.php
+Disallow: /kayit.php
+Disallow: /cikis.php
+Disallow: /mesajlar.php
+Disallow: /sifremi-unuttum.php
+Disallow: /sifre-sifirla.php
+Disallow: /config.php
+Disallow: /install.sql
+Crawl-delay: 2
+
+# Yandex Bot - Turkiye icin onemli
+User-agent: YandexBot
+Allow: /
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /cron/
+Disallow: /includes/
+Disallow: /migrations/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /giris.php
+Disallow: /kayit.php
+Disallow: /cikis.php
+Disallow: /mesajlar.php
+Disallow: /config.php
+Disallow: /install.sql
+Clean-param: utm_source&utm_medium&utm_campaign&sehir&tum&sayfa
+Crawl-delay: 2
+Host: kamyongaraji.org
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /includes/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /giris.php
+Disallow: /kayit.php
+Disallow: /mesajlar.php
+Disallow: /config.php
+Crawl-delay: 3
+
+# Apple Bot
+User-agent: Applebot
+Allow: /
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /includes/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /mesajlar.php
+Crawl-delay: 2
+
+# Sosyal medya onizleme botlari (OG tag icin)
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+# ==========================================
+# Agresif / istenmeyen botlar - tamamen yasak
+# ==========================================
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+# ==========================================
+# Genel default - kalan tum botlar icin
+# ==========================================
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /cron/
+Disallow: /includes/
+Disallow: /migrations/
+Disallow: /yedekler/
+Disallow: /cache/
+Disallow: /tmp/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /giris.php
+Disallow: /kayit.php
+Disallow: /cikis.php
+Disallow: /mesajlar.php
+Disallow: /sifremi-unuttum.php
+Disallow: /sifre-sifirla.php
+Disallow: /ilan-olustur.php
+Disallow: /ilan-duzenle.php
+Disallow: /config.php
+Disallow: /install.sql
+Disallow: /manifest.json
+Crawl-delay: 5
+
+# Sitemap
 Sitemap: https://kamyongaraji.org/sitemap.php

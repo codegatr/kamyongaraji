@@ -12,6 +12,8 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/location.php';
 require_once __DIR__ . '/telefon.php';
+require_once __DIR__ . '/bot.php';
+require_once __DIR__ . '/mail.php';
 
 // Bakim modu kontrolu
 if ((int)ayar('bakim_modu', 0) === 1 && !admin_mi()) {

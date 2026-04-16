@@ -121,8 +121,8 @@ $sehirler = db_fetch_all("SELECT plaka, ad FROM kg_sehirler ORDER BY ad");
                         <div class="text-muted" style="font-size:0.8125rem;"><?= e($user['email']) ?></div>
                     </div>
                     <?= $user['email_dogrulandi']
-                        ? '<span class="badge badge-success">Doğrulandı</span>'
-                        : '<button class="btn btn-outline btn-sm">Doğrula</button>' ?>
+                        ? '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Doğrulandı</span>'
+                        : '<button class="btn btn-outline btn-sm" onclick="emailDogrulamaGonder(this)"><i class="fa-solid fa-paper-plane"></i> Doğrula</button>' ?>
                 </div>
 
                 <div class="d-flex justify-between align-center" style="padding:12px;background:var(--bg-alt);border-radius:10px;">
@@ -184,6 +184,26 @@ $sehirler = db_fetch_all("SELECT plaka, ad FROM kg_sehirler ORDER BY ad");
 </div>
 
 <script>
+async function emailDogrulamaGonder(btn) {
+    if (!confirm('E-posta adresinize doğrulama linki gönderilecek. Devam edilsin mi?')) return;
+
+    btn.disabled = true;
+    const eskiHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+
+    const res = await ajaxPost(SITE_URL + '/ajax/email-dogrulama-gonder.php', {});
+
+    if (res.success) {
+        btn.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i> Gönderildi';
+        showToast('Doğrulama linki e-postanıza gönderildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.', 'success');
+        setTimeout(() => { btn.innerHTML = eskiHTML; btn.disabled = false; }, 10000);
+    } else {
+        btn.innerHTML = eskiHTML;
+        btn.disabled = false;
+        showToast(res.message || 'Gönderilemedi, lütfen tekrar deneyin.', 'error');
+    }
+}
+
 function smsDogrulamaBaslat() {
     openModal('SMS Doğrulama',
         `<div id="smsStep1">

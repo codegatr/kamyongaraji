@@ -37,6 +37,9 @@ function telefon_maskele(?string $tel): string {
  * Telefonu goruntuleme yetkisi var mi?
  */
 function telefon_goster_yetkisi(int $ilanSahibiId): bool {
+    // Arama motoru botlari icin tam gosterim (SEO)
+    if (function_exists('is_search_bot') && is_search_bot()) return true;
+
     // Giris yapmamis -> hayir
     if (!function_exists('giris_yapmis') || !giris_yapmis()) return false;
     if (empty($_SESSION['user_id'])) return false;
@@ -55,6 +58,9 @@ function telefon_goster_yetkisi(int $ilanSahibiId): bool {
  * Telefon goruntulemeyi logla
  */
 function telefon_goruntuleme_logla(int $ilanId, int $ilanSahibiId, string $telefon): void {
+    // Botlari loglama - log tablosu sismesin
+    if (function_exists('is_search_bot') && is_search_bot()) return;
+
     if (empty($_SESSION['user_id'])) return;
 
     // Kendi ilani veya admin ise loglama

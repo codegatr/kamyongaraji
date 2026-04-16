@@ -63,6 +63,70 @@ if (giris_yapmis()) {
 $pageTitle = sayfa_basligi($ilan['baslik']);
 $metaDesc = mb_substr(strip_tags($ilan['aciklama']), 0, 160);
 
+// SEO: Canonical, OG, Twitter, Schema
+$canonicalUrl = SITE_URL . '/ilan.php?slug=' . urlencode($ilan['slug']);
+$ilkGorsel = !empty($gorseller) ? SITE_URL . '/assets/uploads/ilan/' . $gorseller[0]['dosya'] : SITE_URL . '/assets/img/og-image.jpg';
+$ogImage = $ilkGorsel;
+$ogType = 'article';
+$metaKeywords = implode(', ', array_filter([
+    $ilan['baslik'],
+    $ilan['alim_sehir'],
+    $ilan['teslim_sehir'],
+    'yük ilanı',
+    'nakliye',
+    $ilan['yuk_turu'] === 'komple' ? 'komple yük' : 'parsiyel yük',
+    $ilan['alim_sehir'] . ' ' . $ilan['teslim_sehir'] . ' nakliye',
+]));
+
+// Schema.org - Offer/Service markup
+$fiyatSchema = !empty($ilan['fiyat']) ? '"offers": {
+    "@type": "Offer",
+    "price": "' . (float)$ilan['fiyat'] . '",
+    "priceCurrency": "TRY",
+    "availability": "https://schema.org/InStock"
+  },' : '';
+
+$firmaAd = $ilan['firma_adi'] ?: $ilan['ad_soyad'];
+$aciklamaJson = json_encode(strip_tags($ilan['aciklama']), JSON_UNESCAPED_UNICODE);
+$basliKJson = json_encode($ilan['baslik'], JSON_UNESCAPED_UNICODE);
+$firmaJson = json_encode($firmaAd, JSON_UNESCAPED_UNICODE);
+$yayinTarihi = date('c', strtotime($ilan['yayin_tarihi'] ?? $ilan['kayit_tarihi']));
+$alimJson = json_encode($ilan['alim_sehir'] ?? '', JSON_UNESCAPED_UNICODE);
+$teslimJson = json_encode($ilan['teslim_sehir'] ?? '', JSON_UNESCAPED_UNICODE);
+
+$extraSchema = <<<HTML
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": {$basliKJson},
+  "description": {$aciklamaJson},
+  "serviceType": "Nakliye ve Taşımacılık",
+  "provider": {
+    "@type": "Organization",
+    "name": {$firmaJson}
+  },
+  "areaServed": {
+    "@type": "Place",
+    "name": "Türkiye"
+  },
+  {$fiyatSchema}
+  "datePosted": "{$yayinTarihi}",
+  "url": "{$canonicalUrl}"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "
+HTML;
+$extraSchema .= SITE_URL . '"},';
+$extraSchema .= '{"@type": "ListItem", "position": 2, "name": "Yük İlanları", "item": "' . SITE_URL . '/ilanlar.php"},';
+$extraSchema .= '{"@type": "ListItem", "position": 3, "name": ' . $basliKJson . ', "item": "' . $canonicalUrl . '"}';
+$extraSchema .= ']}</script>';
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -318,13 +382,23 @@ require_once __DIR__ . '/includes/header.php';
                 <?php if (!empty($ilan['telefon'])):
                     $yetki = telefon_goster_yetkisi((int)$ilan['user_id']);
                     $kendiIlani = giris_yapmis() && (int)$_SESSION['user_id'] === (int)$ilan['user_id'];
+                    $botZiyareti = is_search_bot();
                 ?>
                 <div class="card card-body mb-3">
                     <div class="text-muted" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">
                         <i class="fa-solid fa-phone"></i> İletişim
                     </div>
 
-                    <?php if ($kendiIlani || admin_mi()): ?>
+                    <?php if ($botZiyareti): ?>
+                        <!-- Arama motoru botu: SEO icin tam numara + Schema.org -->
+                        <div style="padding:14px;background:var(--bg-alt);border-radius:10px;margin-bottom:10px;" itemscope itemtype="https://schema.org/Organization">
+                            <a href="tel:<?= e(preg_replace('/[^0-9+]/','','+'.telefon_normalize($ilan['telefon']))) ?>" itemprop="telephone" style="font-size:1.25rem;font-weight:700;color:var(--primary);text-decoration:none;">
+                                <i class="fa-solid fa-phone"></i> <?= e(telefon_formatla($ilan['telefon'])) ?>
+                            </a>
+                            <meta itemprop="name" content="<?= e($ilan['firma_adi'] ?: $ilan['ad_soyad']) ?>">
+                        </div>
+
+                    <?php elseif ($kendiIlani || admin_mi()): ?>
                         <!-- Kendi ilani veya admin: direkt goster -->
                         <div style="padding:14px;background:var(--bg-alt);border-radius:10px;margin-bottom:10px;">
                             <a href="tel:<?= e(preg_replace('/[^0-9+]/','',$ilan['telefon'])) ?>" style="font-size:1.25rem;font-weight:700;color:var(--primary);text-decoration:none;">

@@ -3,6 +3,12 @@ if (!defined('DB_HOST')) { require_once __DIR__ . '/init.php'; }
 $pageTitle = $pageTitle ?? ayar('site_adi', SITE_NAME);
 $metaDesc = $metaDesc ?? ayar('site_aciklama', '');
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
+
+// SEO: Kanonik URL ve OG image
+$canonicalUrl = $canonicalUrl ?? (SITE_URL . preg_replace('/\?.*$/', '', $_SERVER['REQUEST_URI'] ?? ''));
+$ogImage = $ogImage ?? (SITE_URL . '/assets/img/og-image.jpg');
+$ogType = $ogType ?? 'website';
+$metaKeywords = $metaKeywords ?? 'yük ilanı, nakliye, kamyon, taşıma, lojistik, türkiye, parsiyel, komple yük, taşıyıcı, yük sahibi';
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -10,8 +16,37 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="description" content="<?= e($metaDesc) ?>">
+    <meta name="keywords" content="<?= e($metaKeywords) ?>">
     <meta name="theme-color" content="#1E40AF">
+    <meta name="robots" content="<?= $noindex ?? false ? 'noindex,nofollow' : 'index,follow' ?>">
+    <meta name="author" content="Kamyon Garajı">
     <title><?= e($pageTitle) ?></title>
+
+    <!-- Canonical -->
+    <link rel="canonical" href="<?= e($canonicalUrl) ?>">
+
+    <!-- Open Graph (Facebook, WhatsApp, LinkedIn vs.) -->
+    <meta property="og:type" content="<?= e($ogType) ?>">
+    <meta property="og:site_name" content="<?= e(ayar('site_adi', 'Kamyon Garajı')) ?>">
+    <meta property="og:title" content="<?= e($pageTitle) ?>">
+    <meta property="og:description" content="<?= e($metaDesc) ?>">
+    <meta property="og:url" content="<?= e($canonicalUrl) ?>">
+    <meta property="og:image" content="<?= e($ogImage) ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="tr_TR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= e($pageTitle) ?>">
+    <meta name="twitter:description" content="<?= e($metaDesc) ?>">
+    <meta name="twitter:image" content="<?= e($ogImage) ?>">
+
+    <!-- Ek SEO meta -->
+    <meta name="geo.region" content="TR">
+    <meta name="geo.placename" content="Türkiye">
+    <meta name="language" content="Turkish">
+    <meta name="revisit-after" content="1 days">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +56,31 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css?v=<?= mevcut_versiyon() ?>">
 
     <link rel="icon" href="<?= SITE_URL ?>/assets/img/favicon.png">
+
+    <!-- Schema.org - Organization (tum sayfalarda) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "<?= e(ayar('site_adi', 'Kamyon Garajı')) ?>",
+      "url": "<?= SITE_URL ?>",
+      "logo": "<?= SITE_URL ?>/assets/img/logo.png",
+      "description": "<?= e(ayar('site_aciklama', '')) ?>",
+      "sameAs": [],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "<?= e(ayar('site_email', '')) ?>",
+        "contactType": "Customer Support",
+        "areaServed": "TR",
+        "availableLanguage": "Turkish"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "TR"
+      }
+    }
+    </script>
+    <?= $extraSchema ?? '' ?>
 
     <script>
         window.SITE_URL = '<?= SITE_URL ?>';
