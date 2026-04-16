@@ -48,6 +48,7 @@ $bekleyenOdeme = db_count('kg_odemeler', "durum = 'beklemede'");
             <li><a href="<?= SITE_URL ?>/admin/" class="<?= $currentAdmin==='index'?'active':'' ?>"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
 
             <li class="admin-nav-group-title">Yönetim</li>
+            <li><a href="<?= SITE_URL ?>/admin/yoneticiler.php" class="<?= $currentAdmin==='yoneticiler'?'active':'' ?>"><i class="fa-solid fa-user-shield"></i> Yöneticiler</a></li>
             <li><a href="<?= SITE_URL ?>/admin/kullanicilar.php" class="<?= $currentAdmin==='kullanicilar'?'active':'' ?>"><i class="fa-solid fa-users"></i> Kullanıcılar</a></li>
             <li><a href="<?= SITE_URL ?>/admin/ilanlar.php" class="<?= $currentAdmin==='ilanlar'?'active':'' ?>">
                 <i class="fa-solid fa-box"></i> İlanlar
@@ -98,9 +99,32 @@ $bekleyenOdeme = db_count('kg_odemeler', "durum = 'beklemede'");
                 <h1 class="admin-topbar-title"><?= e($pageTitle) ?></h1>
             </div>
             <div class="admin-topbar-actions">
-                <span class="a-text-muted" style="font-size:0.875rem;">
-                    <i class="fa-solid fa-user-shield"></i> <?= e($_SESSION['user_name'] ?? 'Admin') ?>
-                </span>
+                <div class="admin-user-menu" style="position:relative;">
+                    <button onclick="toggleUserMenu()" class="a-btn a-btn-ghost a-btn-sm" style="padding:6px 12px;display:flex;align-items:center;gap:8px;">
+                        <span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--a-primary),var(--a-accent));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8125rem;">
+                            <?= mb_substr($_SESSION['user_name'] ?? 'A', 0, 1) ?>
+                        </span>
+                        <span><?= e($_SESSION['user_name'] ?? 'Admin') ?></span>
+                        <i class="fa-solid fa-chevron-down" style="font-size:0.6875rem;opacity:0.6;"></i>
+                    </button>
+                    <div id="userMenuDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1px solid var(--a-border);border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.1);min-width:220px;z-index:100;overflow:hidden;">
+                        <a href="<?= SITE_URL ?>/admin/profilim.php" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--a-text);font-size:0.875rem;border-bottom:1px solid var(--a-border);">
+                            <i class="fa-solid fa-user" style="width:18px;color:var(--a-primary);"></i> Profilim
+                        </a>
+                        <a href="<?= SITE_URL ?>/admin/profilim.php#sifre" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--a-text);font-size:0.875rem;border-bottom:1px solid var(--a-border);">
+                            <i class="fa-solid fa-key" style="width:18px;color:var(--a-accent);"></i> Şifre Değiştir
+                        </a>
+                        <a href="<?= SITE_URL ?>/admin/yoneticiler.php" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--a-text);font-size:0.875rem;border-bottom:1px solid var(--a-border);">
+                            <i class="fa-solid fa-user-shield" style="width:18px;color:var(--a-text-muted);"></i> Yöneticiler
+                        </a>
+                        <a href="<?= SITE_URL ?>/" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--a-text);font-size:0.875rem;border-bottom:1px solid var(--a-border);">
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="width:18px;color:var(--a-text-muted);"></i> Siteyi Görüntüle
+                        </a>
+                        <a href="<?= SITE_URL ?>/cikis.php" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--a-danger);font-size:0.875rem;font-weight:600;">
+                            <i class="fa-solid fa-right-from-bracket" style="width:18px;"></i> Çıkış Yap
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 

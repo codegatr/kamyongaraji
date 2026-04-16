@@ -7,6 +7,21 @@ function toggleAdminSidebar() {
     document.getElementById('adminSidebar').classList.toggle('open');
 }
 
+// User menu dropdown
+function toggleUserMenu() {
+    const d = document.getElementById('userMenuDropdown');
+    if (d) d.style.display = d.style.display === 'block' ? 'none' : 'block';
+}
+
+// Dropdown disarda tiklayinca kapat
+document.addEventListener('click', (e) => {
+    const menu = document.querySelector('.admin-user-menu');
+    const dropdown = document.getElementById('userMenuDropdown');
+    if (menu && dropdown && !menu.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
 // AJAX helper
 async function aAjax(url, data = {}) {
     const fd = new FormData();
