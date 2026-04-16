@@ -314,6 +314,65 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
+                <!-- Iletisim Bilgileri - Maske/Tam Gosterim -->
+                <?php if (!empty($ilan['telefon'])):
+                    $yetki = telefon_goster_yetkisi((int)$ilan['user_id']);
+                    $kendiIlani = giris_yapmis() && (int)$_SESSION['user_id'] === (int)$ilan['user_id'];
+                ?>
+                <div class="card card-body mb-3">
+                    <div class="text-muted" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">
+                        <i class="fa-solid fa-phone"></i> İletişim
+                    </div>
+
+                    <?php if ($kendiIlani || admin_mi()): ?>
+                        <!-- Kendi ilani veya admin: direkt goster -->
+                        <div style="padding:14px;background:var(--bg-alt);border-radius:10px;margin-bottom:10px;">
+                            <a href="tel:<?= e(preg_replace('/[^0-9+]/','',$ilan['telefon'])) ?>" style="font-size:1.25rem;font-weight:700;color:var(--primary);text-decoration:none;">
+                                <i class="fa-solid fa-phone"></i> <?= e(telefon_formatla($ilan['telefon'])) ?>
+                            </a>
+                            <div class="text-muted" style="font-size:0.8125rem;margin-top:4px;">
+                                <?= $kendiIlani ? '(Sizin numaranız)' : '(Admin görünümü)' ?>
+                            </div>
+                        </div>
+
+                    <?php elseif ($yetki): ?>
+                        <!-- Uye: once maske, AJAX ile tam goster -->
+                        <div id="telefonBox" style="padding:14px;background:var(--bg-alt);border-radius:10px;margin-bottom:10px;">
+                            <div id="telefonMaske" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                                <span style="font-size:1.25rem;font-weight:700;color:var(--text);letter-spacing:1px;font-family:monospace;">
+                                    <i class="fa-solid fa-phone text-muted"></i> <?= e(telefon_maskele($ilan['telefon'])) ?>
+                                </span>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="telefonGoster()" id="telefonGosterBtn">
+                                    <i class="fa-solid fa-eye"></i> Numarayı Göster
+                                </button>
+                            </div>
+                            <div id="telefonTam" style="display:none;"></div>
+                        </div>
+
+                    <?php else: ?>
+                        <!-- Ziyaretci: maske + giris CTA -->
+                        <div style="padding:14px;background:var(--bg-alt);border-radius:10px;margin-bottom:10px;">
+                            <div style="font-size:1.25rem;font-weight:700;color:var(--text-muted);letter-spacing:1px;font-family:monospace;margin-bottom:10px;">
+                                <i class="fa-solid fa-lock"></i> <?= e(telefon_maskele($ilan['telefon'])) ?>
+                            </div>
+                            <div style="padding:12px 14px;background:var(--info-light);border-left:3px solid var(--primary);border-radius:8px;font-size:0.875rem;color:var(--primary-dark);">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Telefon numarasını görmek için
+                                <a href="<?= SITE_URL ?>/giris.php?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" style="font-weight:600;">giriş yapın</a>
+                                veya
+                                <a href="<?= SITE_URL ?>/kayit.php?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" style="font-weight:600;">ücretsiz üye olun</a>.
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (giris_yapmis() && !$kendiIlani): ?>
+                        <a href="<?= SITE_URL ?>/mesajlar.php?ilan=<?= $ilan['id'] ?>&user=<?= $ilan['user_id'] ?>" class="btn btn-outline btn-block btn-sm">
+                            <i class="fa-solid fa-message"></i> Platform Üzerinden Mesajlaş
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
                 <!-- Teklif Ver / Mesaj -->
                 <?php if (!giris_yapmis()): ?>
                     <div class="alert alert-info">
@@ -456,6 +515,38 @@ async function teklifGeriCek(teklifId) {
             showToast(res.message, 'error');
         }
     });
+}
+
+async function telefonGoster() {
+    const btn = document.getElementById('telefonGosterBtn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...';
+
+    const res = await ajaxPost(SITE_URL + '/ajax/telefon-goster.php', { ilan_id: <?= (int)$ilan['id'] ?> });
+
+    if (res.success && res.data) {
+        const d = res.data;
+        document.getElementById('telefonMaske').style.display = 'none';
+        const tam = document.getElementById('telefonTam');
+        tam.style.display = 'block';
+        tam.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <a href="tel:${d.telefon_tel}" style="font-size:1.375rem;font-weight:700;color:var(--primary);text-decoration:none;font-family:monospace;">
+                    <i class="fa-solid fa-phone"></i> ${d.telefon_formatli}
+                </a>
+                <a href="${d.whatsapp}" target="_blank" rel="noopener" class="btn btn-success btn-sm" style="background:#25D366;border-color:#25D366;">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+            </div>
+            <div class="text-muted" style="font-size:0.75rem;margin-top:8px;">
+                <i class="fa-solid fa-circle-info"></i> Aramanızı ilan numarasını belirterek yapın.
+            </div>`;
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-eye"></i> Tekrar Dene';
+        showToast(res.message || 'Telefon alınamadı', 'error');
+    }
 }
 
 function sikayetEt() {

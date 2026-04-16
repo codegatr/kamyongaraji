@@ -77,6 +77,7 @@ $bekleyenOdeme = db_count('kg_odemeler', "durum = 'beklemede'");
             <li class="admin-nav-group-title">Sistem</li>
             <li><a href="<?= SITE_URL ?>/admin/ayarlar.php" class="<?= $currentAdmin==='ayarlar'?'active':'' ?>"><i class="fa-solid fa-cog"></i> Ayarlar</a></li>
             <li><a href="<?= SITE_URL ?>/admin/guncelleme.php" class="<?= $currentAdmin==='guncelleme'?'active':'' ?>"><i class="fa-solid fa-cloud-arrow-down"></i> Güncelleme</a></li>
+            <li><a href="<?= SITE_URL ?>/admin/telefon-loglari.php" class="<?= $currentAdmin==='telefon-loglari'?'active':'' ?>"><i class="fa-solid fa-phone"></i> Telefon Logları</a></li>
             <li><a href="<?= SITE_URL ?>/admin/loglar.php" class="<?= $currentAdmin==='loglar'?'active':'' ?>"><i class="fa-solid fa-clock-rotate-left"></i> Loglar</a></li>
 
             <li class="admin-nav-group-title">&nbsp;</li>

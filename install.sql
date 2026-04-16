@@ -396,6 +396,24 @@ CREATE TABLE IF NOT EXISTS `kg_ip_cache` (
   KEY `gecerlilik_idx` (`gecerlilik`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Telefon goruntuleme loglari (kim, hangi ilana, ne zaman bakti)
+CREATE TABLE IF NOT EXISTS `kg_telefon_goruntuleme` (
+  `id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) UNSIGNED NOT NULL,
+  `ilan_id` INT(11) UNSIGNED NOT NULL,
+  `ilan_sahibi_id` INT(11) UNSIGNED NOT NULL,
+  `ip` VARCHAR(45) DEFAULT NULL,
+  `user_agent` VARCHAR(255) DEFAULT NULL,
+  `goruntulenme_sayisi` INT(11) UNSIGNED NOT NULL DEFAULT 1,
+  `son_goruntuleme` DATETIME DEFAULT NULL,
+  `kayit_tarihi` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_idx` (`user_id`),
+  KEY `ilan_id_idx` (`ilan_id`),
+  KEY `ilan_sahibi_id_idx` (`ilan_sahibi_id`),
+  KEY `kayit_tarihi_idx` (`kayit_tarihi`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Varsayilan Ayarlar
 INSERT INTO `kg_ayarlar` (`anahtar`, `deger`, `aciklama`, `grup`) VALUES
 ('site_adi', 'Kamyon Garajı', 'Site adı', 'genel'),
