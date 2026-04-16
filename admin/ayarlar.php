@@ -79,34 +79,94 @@ require_once __DIR__ . '/header.php';
                 </div>
 
             <?php elseif ($tab === 'mail'): ?>
+                <div class="a-alert a-alert-info">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <div>
+                        <strong>SMTP kendi domain'inizin mail hesabı olmalı</strong> (örn: <code>noreply@kamyongaraji.org</code>). Farklı bir domain'in SMTP'sini kullanırsanız <strong>relay</strong> sorunu yaşarsınız (550 No such recipient). DNS'de SPF/DKIM kayıtları da eklenmeli ki spam'e düşmesin.
+                    </div>
+                </div>
+
                 <div class="a-grid a-grid-2">
                     <div class="a-form-group">
-                        <label class="a-label">SMTP Host</label>
-                        <input type="text" name="smtp_host" class="a-input" value="<?= e(ayar('smtp_host')) ?>" placeholder="mail.ornek.com">
+                        <label class="a-label">SMTP Host <span class="req">*</span></label>
+                        <input type="text" name="smtp_host" class="a-input" value="<?= e(ayar('smtp_host')) ?>" placeholder="mail.kamyongaraji.org">
+                        <small style="color:var(--a-text-muted);font-size:0.75rem;">Genelde: <code>mail.</code> + domain adı</small>
                     </div>
                     <div class="a-form-group">
-                        <label class="a-label">SMTP Port</label>
-                        <input type="number" name="smtp_port" class="a-input" value="<?= e(ayar('smtp_port', '587')) ?>">
+                        <label class="a-label">SMTP Port <span class="req">*</span></label>
+                        <select name="smtp_port" class="a-select">
+                            <option value="587" <?= ayar('smtp_port', '587')=='587'?'selected':'' ?>>587 (TLS - Önerilen)</option>
+                            <option value="465" <?= ayar('smtp_port')=='465'?'selected':'' ?>>465 (SSL)</option>
+                            <option value="2525" <?= ayar('smtp_port')=='2525'?'selected':'' ?>>2525 (Alternatif TLS)</option>
+                        </select>
                     </div>
                 </div>
                 <div class="a-grid a-grid-2">
                     <div class="a-form-group">
-                        <label class="a-label">SMTP Kullanıcı</label>
-                        <input type="text" name="smtp_user" class="a-input" value="<?= e(ayar('smtp_user')) ?>">
+                        <label class="a-label">SMTP Kullanıcı <span class="req">*</span></label>
+                        <input type="text" name="smtp_user" class="a-input" value="<?= e(ayar('smtp_user')) ?>" placeholder="noreply@kamyongaraji.org">
+                        <small style="color:var(--a-text-muted);font-size:0.75rem;">Tam e-posta adresi</small>
                     </div>
                     <div class="a-form-group">
-                        <label class="a-label">SMTP Şifre</label>
-                        <input type="password" name="smtp_pass" class="a-input" value="<?= e(ayar('smtp_pass')) ?>" placeholder="Değiştirmek için yeniden girin">
+                        <label class="a-label">SMTP Şifre <span class="req">*</span></label>
+                        <input type="password" name="smtp_pass" class="a-input" value="<?= e(ayar('smtp_pass')) ?>" placeholder="Değiştirmek için yeniden girin" autocomplete="new-password">
                     </div>
                 </div>
                 <div class="a-grid a-grid-2">
                     <div class="a-form-group">
                         <label class="a-label">Gönderen E-posta</label>
-                        <input type="email" name="smtp_from" class="a-input" value="<?= e(ayar('smtp_from')) ?>">
+                        <input type="email" name="smtp_from" class="a-input" value="<?= e(ayar('smtp_from')) ?>" placeholder="noreply@kamyongaraji.org">
+                        <small style="color:var(--a-text-muted);font-size:0.75rem;">Boş bırakılırsa SMTP Kullanıcı kullanılır</small>
                     </div>
                     <div class="a-form-group">
                         <label class="a-label">Gönderen Ad</label>
-                        <input type="text" name="smtp_from_name" class="a-input" value="<?= e(ayar('smtp_from_name')) ?>">
+                        <input type="text" name="smtp_from_name" class="a-input" value="<?= e(ayar('smtp_from_name')) ?>" placeholder="Kamyon Garajı">
+                    </div>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--a-border);margin:24px 0;">
+
+                <!-- Test Mail Araci -->
+                <div class="a-card" style="background:var(--a-bg);border:2px dashed var(--a-border);">
+                    <div class="a-card-body">
+                        <h4 style="margin-top:0;margin-bottom:12px;"><i class="fa-solid fa-vial"></i> SMTP Test</h4>
+                        <p class="a-text-muted" style="font-size:0.875rem;margin-bottom:14px;">
+                            SMTP ayarlarınızı kaydettikten sonra buradan test mail gönderebilirsiniz. Kendi adresinize gönderin, spam klasörünü de kontrol edin.
+                        </p>
+
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                            <div class="a-form-group" style="flex:1;min-width:200px;margin:0;">
+                                <label class="a-label">Test Alıcı</label>
+                                <input type="email" id="testMailAlici" class="a-input" value="<?= e($_SESSION['user_email'] ?? '') ?>" placeholder="alici@ornek.com">
+                            </div>
+                            <button type="button" class="a-btn a-btn-accent" onclick="smtpTestGonder(this)" id="smtpTestBtn">
+                                <i class="fa-solid fa-paper-plane"></i> Test Mail Gönder
+                            </button>
+                        </div>
+
+                        <div id="smtpTestResult" style="margin-top:14px;"></div>
+
+                        <details style="margin-top:16px;font-size:0.875rem;">
+                            <summary style="cursor:pointer;color:var(--a-primary);">
+                                <i class="fa-solid fa-book"></i> SMTP kurulum rehberi
+                            </summary>
+                            <div style="padding:14px;background:white;border-radius:8px;margin-top:10px;">
+                                <strong>DirectAdmin adımları:</strong>
+                                <ol style="padding-left:20px;line-height:1.8;margin:8px 0;">
+                                    <li>E-Mail Manager → E-Mail Accounts → Create New Account</li>
+                                    <li>Username: <code>noreply</code>, Domain: <code>kamyongaraji.org</code></li>
+                                    <li>Güçlü şifre belirle, 500 MB quota</li>
+                                    <li>Buraya bilgileri gir, Kaydet, sonra Test Mail gönder</li>
+                                </ol>
+
+                                <strong>DNS kayıtları (spam'e düşmemek için):</strong>
+                                <ul style="padding-left:20px;line-height:1.8;margin:8px 0;">
+                                    <li><strong>SPF:</strong> <code>v=spf1 +a +mx -all</code></li>
+                                    <li><strong>DKIM:</strong> DirectAdmin → DNS → DKIM Keys → Enable</li>
+                                    <li><strong>DMARC:</strong> <code>v=DMARC1; p=none; rua=mailto:postmaster@kamyongaraji.org</code></li>
+                                </ul>
+                            </div>
+                        </details>
                     </div>
                 </div>
 
@@ -297,5 +357,61 @@ require_once __DIR__ . '/header.php';
         </form>
     </div>
 </div>
+
+<script>
+async function smtpTestGonder(btn) {
+    const alici = document.getElementById('testMailAlici').value.trim();
+    const resultBox = document.getElementById('smtpTestResult');
+
+    if (!alici || !alici.includes('@')) {
+        resultBox.innerHTML = '<div class="a-alert a-alert-warning"><i class="fa-solid fa-exclamation-triangle"></i><div>Geçerli bir e-posta adresi girin.</div></div>';
+        return;
+    }
+
+    btn.disabled = true;
+    const eskiHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    resultBox.innerHTML = '<div class="a-text-muted" style="padding:10px;"><i class="fa-solid fa-spinner fa-spin"></i> SMTP sunucusuna bağlanılıyor...</div>';
+
+    try {
+        const fd = new FormData();
+        fd.append('csrf_token', window.CSRF_TOKEN);
+        fd.append('alici', alici);
+
+        const r = await fetch('<?= SITE_URL ?>/ajax/smtp-test.php', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        });
+        const txt = await r.text();
+        let res;
+        try { res = JSON.parse(txt); } catch(e) { res = {success: false, message: 'Yanıt ayrıştırılamadı: ' + txt.substring(0, 300)}; }
+
+        if (res.success) {
+            resultBox.innerHTML = `<div class="a-alert a-alert-success">
+                <i class="fa-solid fa-check-circle"></i>
+                <div>
+                    <strong>✓ Test mail gönderildi!</strong><br>
+                    <span style="font-size:0.875rem;">Alıcı: <code>${alici}</code></span><br>
+                    <span style="font-size:0.8125rem;opacity:0.85;">Gelen kutusunu ve SPAM klasörünü kontrol edin. Mail gelmezse DNS (SPF/DKIM) kayıtlarınızı düzenleyin.</span>
+                </div>
+            </div>`;
+        } else {
+            resultBox.innerHTML = `<div class="a-alert a-alert-danger">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <div>
+                    <strong>✗ Gönderilemedi</strong><br>
+                    <code style="font-size:0.8125rem;display:block;margin-top:6px;padding:8px;background:white;border-radius:4px;word-break:break-word;">${res.message || 'Bilinmeyen hata'}</code>
+                </div>
+            </div>`;
+        }
+    } catch (e) {
+        resultBox.innerHTML = `<div class="a-alert a-alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div>Ağ hatası: ${e.message}</div></div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = eskiHTML;
+}
+</script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

@@ -23,14 +23,15 @@ function mail_gonder(string $to, string $konu, string $icerik, string $toName = 
         return ['success' => false, 'message' => 'Geçersiz e-posta adresi'];
     }
 
-    $fromEmail = ayar('smtp_user') ?: ayar('site_email', 'noreply@kamyongaraji.org');
-    $fromName = ayar('site_adi', 'Kamyon Garajı');
-
-    // SMTP ayarlari dolu mu?
-    $smtpHost = ayar('smtp_host', '');
+    // SMTP ayarlari
+    $smtpHost = trim(ayar('smtp_host', ''));
     $smtpPort = (int)ayar('smtp_port', 587);
-    $smtpUser = ayar('smtp_user', '');
+    $smtpUser = trim(ayar('smtp_user', ''));
     $smtpPass = ayar('smtp_pass', '');
+
+    // Gonderen bilgisi: smtp_from > smtp_user > site_email
+    $fromEmail = trim(ayar('smtp_from', '')) ?: ($smtpUser ?: ayar('site_email', 'noreply@kamyongaraji.org'));
+    $fromName = trim(ayar('smtp_from_name', '')) ?: ayar('site_adi', 'Kamyon Garajı');
 
     if (!empty($smtpHost) && !empty($smtpUser) && !empty($smtpPass)) {
         // SMTP ile gonder
@@ -49,10 +50,10 @@ function mail_gonder(string $to, string $konu, string $icerik, string $toName = 
 
     if ($gonderildi) {
         log_action('mail_gonder', null, null, "To: $to | Konu: $konu");
-        return ['success' => true, 'message' => 'Mail gönderildi'];
+        return ['success' => true, 'message' => 'Mail gönderildi (native mail)'];
     }
 
-    return ['success' => false, 'message' => 'Mail gönderilemedi. SMTP ayarlarını kontrol edin.'];
+    return ['success' => false, 'message' => 'Mail gönderilemedi. SMTP ayarlarını kontrol edin veya sunucu mail()  fonksiyonu çalışmıyor.'];
 }
 
 /**
