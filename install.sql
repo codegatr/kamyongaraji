@@ -426,7 +426,7 @@ INSERT INTO `kg_sayfalar` (`slug`, `baslik`, `icerik`, `durum`, `sira`) VALUES
 
 -- Varsayilan Admin (sifre: admin123 - kurulum sonrasi degistirilmeli)
 INSERT INTO `kg_users` (`user_type`, `email`, `password`, `ad_soyad`, `telefon`, `durum`, `email_dogrulandi`, `sms_dogrulandi`) VALUES
-('admin', 'admin@kamyongaraji.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sistem Yöneticisi', '05000000000', 'aktif', 1, 1);
+('admin', 'admin@kamyongaraji.org', '$2y$10$aFG2r5d6PVLD33OXRaqdNubce6e8bYIf9o9bAzvlep.9.TXvpntHm', 'Sistem Yöneticisi', '05000000000', 'aktif', 1, 1);
 
 -- Varsayilan Versiyon Kaydi
 INSERT INTO `kg_versiyon` (`versiyon`, `aciklama`) VALUES
