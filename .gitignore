@@ -1,0 +1,45 @@
+# Hassas dosyalar - repo'ya asla push edilmez
+config.php
+.env
+.env.local
+
+# Yedekler
+yedekler/*.zip
+yedekler/*.log
+
+# Upload edilen kullanıcı dosyaları
+assets/uploads/ilan/*
+assets/uploads/profil/*
+assets/uploads/sayfa/*
+!assets/uploads/ilan/index.php
+!assets/uploads/profil/index.php
+!assets/uploads/sayfa/index.php
+
+# Cache & temp
+cache/
+tmp/
+*.cache
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log dosyaları
+*.log
+error_log
+
+# Node (eğer eklenirse)
+node_modules/
+package-lock.json
+
+# PHP Composer (eğer eklenirse)
+vendor/
+composer.lock

@@ -1,0 +1,20 @@
+{
+    "project": "kamyongaraji",
+    "version": "1.0.0",
+    "release_date": "2026-04-16",
+    "description": "Kamyon Garajı - B2B Lojistik Marketplace",
+    "repository": "codegatr/kamyongaraji",
+    "php_required": "8.3",
+    "mysql_required": "5.7",
+    "table_prefix": "kg_",
+    "excluded_from_updates": [
+        "config.php",
+        "yedekler/",
+        "assets/uploads/",
+        ".git/",
+        "cache/",
+        "tmp/",
+        "install.sql"
+    ],
+    "files": []
+}

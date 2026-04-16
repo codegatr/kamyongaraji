@@ -1,0 +1,30 @@
+User-agent: *
+Allow: /
+Allow: /ilanlar.php
+Allow: /ilan.php
+Allow: /sayfa.php
+Allow: /nasil-calisir.php
+Allow: /iletisim.php
+Allow: /assets/
+
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /api/
+Disallow: /cron/
+Disallow: /includes/
+Disallow: /yedekler/
+Disallow: /panel.php
+Disallow: /panel/
+Disallow: /giris.php
+Disallow: /kayit.php
+Disallow: /cikis.php
+Disallow: /mesajlar.php
+Disallow: /sifremi-unuttum.php
+Disallow: /sifre-sifirla.php
+Disallow: /ilan-olustur.php
+Disallow: /ilan-duzenle.php
+Disallow: /config.php
+Disallow: /install.sql
+Disallow: /manifest.json
+
+Sitemap: https://kamyongaraji.org/sitemap.php
