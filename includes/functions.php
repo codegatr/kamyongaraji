@@ -323,17 +323,48 @@ function valid_email(string $email): bool {
 }
 
 /**
- * Telefon normalize (90 ile baslayan, rakam)
+ * Telefon normalize - hep 90 + 10 hane formatinda dondurur
+ *
+ * Kabul edilen girdi formatlari:
+ *   5321234567        (10 hane)
+ *   05321234567       (11 hane, 0 ile baslar)
+ *   905321234567      (12 hane, 90 ile baslar)
+ *   +905321234567     (+90 ile baslar)
+ *   +90 532 123 45 67 (bosluk/tire/parantez iceren)
+ *
+ * Dondurulen format: "905321234567" (12 hane)
+ * Hatali giris durumunda orijinal temizlenmis hali dondurur.
  */
 function telefon_normalize(string $tel): string {
+    // Sadece rakamlari al
     $tel = preg_replace('/[^0-9]/', '', $tel);
-    if (strlen($tel) === 10) $tel = '9' . $tel;
-    if (strlen($tel) === 11 && $tel[0] === '0') $tel = '9' . substr($tel, 1);
-    return $tel;
+
+    // 5XXXXXXXXX (10 hane) -> 905XXXXXXXXX
+    if (strlen($tel) === 10 && $tel[0] === '5') {
+        return '90' . $tel;
+    }
+
+    // 05XXXXXXXXX (11 hane, 0 ile baslayan) -> 905XXXXXXXXX
+    if (strlen($tel) === 11 && $tel[0] === '0' && $tel[1] === '5') {
+        return '90' . substr($tel, 1);
+    }
+
+    // 905XXXXXXXXX (12 hane, zaten dogru format)
+    if (strlen($tel) === 12 && substr($tel, 0, 3) === '905') {
+        return $tel;
+    }
+
+    // Eski bug'li girisleri temizle: 95XXXXXXXXX (11 hane, bozuk normalize sonucu)
+    if (strlen($tel) === 11 && $tel[0] === '9' && $tel[1] === '5') {
+        return '90' . substr($tel, 1);
+    }
+
+    return $tel; // Normalize edilemedi - validator false donecek
 }
 
 /**
- * Turkce telefon validasyon
+ * Turkce cep telefonu validasyonu
+ * Format: 905XXXXXXXXX (12 hane, 905 ile baslar)
  */
 function valid_tel(string $tel): bool {
     $tel = telefon_normalize($tel);

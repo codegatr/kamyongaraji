@@ -4,7 +4,25 @@ require_once __DIR__ . '/includes/init.php';
 $pageTitle = sayfa_basligi();
 $metaDesc = ayar('site_aciklama');
 
-// Son ilanlar
+// Kullanici lokasyonunu tespit et
+$lokasyon = kullanici_lokasyon();
+$kullaniciSehri = $lokasyon['sehir'];
+
+// Sehirdeki ilanlar (varsa)
+$sehirIlanlari = [];
+if ($kullaniciSehri) {
+    $sehirIlanlari = db_fetch_all("
+        SELECT i.*, u.ad_soyad, u.firma_adi, u.puan_ortalama, u.yorum_sayisi
+        FROM kg_ilanlar i
+        LEFT JOIN kg_users u ON u.id = i.user_id
+        WHERE i.durum = 'aktif'
+          AND (i.alim_sehir = :s1 OR i.teslim_sehir = :s2)
+        ORDER BY i.ozellikli DESC, i.oncelikli_listeme DESC, i.yayin_tarihi DESC
+        LIMIT 8
+    ", ['s1' => $kullaniciSehri, 's2' => $kullaniciSehri]);
+}
+
+// Genel son ilanlar (sehir ilani yoksa veya her durumda altinda gosterilir)
 $sonIlanlar = db_fetch_all("
     SELECT i.*, u.ad_soyad, u.firma_adi, u.puan_ortalama, u.yorum_sayisi
     FROM kg_ilanlar i
@@ -23,6 +41,38 @@ $sehirler = db_fetch_all("SELECT plaka, ad FROM kg_sehirler ORDER BY ad");
 
 require_once __DIR__ . '/includes/header.php';
 ?>
+
+<?php
+// Lokasyon banner - sadece bir kere gosterilir (cookie)
+$bannerKapatildi = !empty($_COOKIE['kg_sehir_banner_kapandi']);
+$bannerAktif = !empty($kullaniciSehri)
+    && (int)ayar('lokasyon_goster_banner', 1) === 1
+    && !$bannerKapatildi
+    && $lokasyon['kaynak'] !== 'varsayilan';
+?>
+<?php if ($bannerAktif): ?>
+<div id="lokasyonBanner" style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:10px 20px;">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:0.9375rem;">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>
+                <strong><?= e($kullaniciSehri) ?></strong> şehrindeki ilanları gösteriyoruz.
+                <?php if ($lokasyon['kaynak'] === 'geoip'): ?>
+                    <span style="opacity:0.85;font-size:0.8125rem;">(Konumunuzdan tespit edildi)</span>
+                <?php endif; ?>
+            </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="sehirDegistirAc()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-weight:500;font-size:0.8125rem;">
+                <i class="fa-solid fa-arrows-rotate"></i> Şehri Değiştir
+            </button>
+            <button onclick="bannerKapat()" aria-label="Kapat" style="background:transparent;color:white;border:none;cursor:pointer;padding:4px 8px;font-size:1.125rem;opacity:0.75;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <section class="hero">
     <div class="container">
@@ -94,12 +144,37 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<!-- Son Ilanlar -->
+<!-- Sehirdeki Ilanlar (lokasyon varsa) -->
+<?php if (!empty($sehirIlanlari)): ?>
 <section class="section" style="padding-top: 0;">
     <div class="container">
         <div class="d-flex justify-between align-center mb-3" style="flex-wrap: wrap; gap: 16px;">
             <div>
-                <h2>Son İlanlar</h2>
+                <h2><i class="fa-solid fa-location-dot text-accent"></i> <?= e($kullaniciSehri) ?> İlanları</h2>
+                <p class="text-muted mb-0">
+                    Şehrinizle ilgili yük ilanları (alım veya teslim)
+                </p>
+            </div>
+            <a href="<?= SITE_URL ?>/ilanlar.php?sehir=<?= urlencode($kullaniciSehri) ?>" class="btn btn-outline">
+                Tümünü Gör <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-4">
+            <?php foreach ($sehirIlanlari as $i): ?>
+                <?php include __DIR__ . '/includes/ilan-card.php'; ?>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- Tum Son Ilanlar -->
+<section class="section" style="padding-top: 0;">
+    <div class="container">
+        <div class="d-flex justify-between align-center mb-3" style="flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2><?= !empty($sehirIlanlari) ? 'Türkiye Geneli Son İlanlar' : 'Son İlanlar' ?></h2>
                 <p class="text-muted mb-0">Yeni eklenen yük ilanları</p>
             </div>
             <a href="<?= SITE_URL ?>/ilanlar.php" class="btn btn-outline">
@@ -194,5 +269,92 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </div>
 </section>
+
+<!-- Sehir Degistir Modal (JS ile acilir) -->
+<div id="sehirSecModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:16px;max-width:500px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;"><i class="fa-solid fa-location-dot text-accent"></i> Şehir Seç</h3>
+            <button onclick="sehirDegistirKapat()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--text-muted);">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+            <input type="text" id="sehirArama" class="form-control" placeholder="Şehir ara..." oninput="sehirFiltrele()" autocomplete="off">
+        </div>
+        <div id="sehirListesi" style="overflow-y:auto;max-height:400px;padding:8px;">
+            <?php foreach ($sehirler as $s): ?>
+                <button class="sehir-item" data-sehir="<?= e($s['ad']) ?>" onclick="sehirSec('<?= e(str_replace("'","\\'",$s['ad'])) ?>')" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;border-radius:8px;cursor:pointer;font-size:0.9375rem;color:var(--text);<?= $s['ad']===$kullaniciSehri?'background:var(--info-light);color:var(--primary);font-weight:600;':'' ?>">
+                    <i class="fa-solid fa-location-dot" style="width:18px;opacity:0.5;"></i>
+                    <?= e($s['ad']) ?>
+                    <?php if ($s['ad'] === $kullaniciSehri): ?>
+                        <i class="fa-solid fa-check" style="float:right;color:var(--success);"></i>
+                    <?php endif; ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid var(--border);">
+            <button onclick="sehirTemizle()" class="btn btn-ghost btn-block">
+                <i class="fa-solid fa-globe"></i> Tüm Türkiye'yi Göster
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.sehir-item:hover { background: var(--bg-alt) !important; }
+</style>
+
+<script>
+function sehirDegistirAc() {
+    document.getElementById('sehirSecModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('sehirArama')?.focus(), 100);
+}
+function sehirDegistirKapat() {
+    document.getElementById('sehirSecModal').style.display = 'none';
+}
+function sehirFiltrele() {
+    const q = document.getElementById('sehirArama').value.toLowerCase()
+        .replace(/i̇/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u')
+        .replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');
+    document.querySelectorAll('.sehir-item').forEach(el => {
+        const ad = el.dataset.sehir.toLowerCase()
+            .replace(/i̇/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u')
+            .replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');
+        el.style.display = ad.includes(q) ? 'block' : 'none';
+    });
+}
+async function sehirSec(sehir) {
+    const fd = new FormData();
+    fd.append('csrf_token', window.CSRF_TOKEN);
+    fd.append('sehir', sehir);
+    try {
+        const r = await fetch(SITE_URL + '/ajax/lokasyon-sehir.php', {method:'POST', body:fd, credentials:'same-origin'});
+        await r.text(); // response'u bekle
+    } catch(e) { console.warn(e); }
+    location.reload();
+}
+async function sehirTemizle() {
+    const fd = new FormData();
+    fd.append('csrf_token', window.CSRF_TOKEN);
+    fd.append('islem', 'temizle');
+    try {
+        await fetch(SITE_URL + '/ajax/lokasyon-sehir.php', {method:'POST', body:fd, credentials:'same-origin'});
+    } catch(e) {}
+    location.reload();
+}
+function bannerKapat() {
+    document.cookie = 'kg_sehir_banner_kapandi=1; max-age=' + (7*86400) + '; path=/; samesite=Lax';
+    document.getElementById('lokasyonBanner').style.display = 'none';
+}
+// ESC ile modal kapa
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') sehirDegistirKapat();
+});
+// Modal disarida tiklayinca kapat
+document.getElementById('sehirSecModal')?.addEventListener('click', e => {
+    if (e.target.id === 'sehirSecModal') sehirDegistirKapat();
+});
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

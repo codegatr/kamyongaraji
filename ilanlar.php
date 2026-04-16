@@ -12,12 +12,38 @@ $sayfa = max(1, (int)get('sayfa', 1));
 $limit = 20;
 $offset = ($sayfa - 1) * $limit;
 
+// Lokasyon filtresi: ?sehir=Konya geldiginde (alim VEYA teslim)
+// Veya kullanici manuel alim/teslim secmediyse otomatik olarak lokasyona gore filtrele
+$lokasyonSehir = clean(get('sehir', ''));
+$lokasyonAktif = false;
+
+// Manuel alim/teslim varsa veya ?tum=1 gelmisse otomatik lokasyon kullanma
+if (!$alim && !$teslim && !$lokasyonSehir && empty($_GET['tum'])) {
+    // Otomatik: kullanicinin lokasyonunu al
+    $auto = kullanici_lokasyon();
+    if (!empty($auto['sehir']) && $auto['kaynak'] !== 'varsayilan') {
+        // Sadece bu sehirdeki ilan varsa otomatik filtrele
+        $sayi = db_fetch("SELECT COUNT(*) AS c FROM kg_ilanlar
+                          WHERE durum = 'aktif' AND (alim_sehir = :s1 OR teslim_sehir = :s2)",
+                          ['s1' => $auto['sehir'], 's2' => $auto['sehir']]);
+        if ((int)($sayi['c'] ?? 0) > 0) {
+            $lokasyonSehir = $auto['sehir'];
+            $lokasyonAktif = true;
+        }
+    }
+}
+
 // Filtreler
 $where = ["i.durum = 'aktif'"];
 $params = [];
 
 if ($alim) { $where[] = "i.alim_sehir = :alim"; $params['alim'] = $alim; }
 if ($teslim) { $where[] = "i.teslim_sehir = :teslim"; $params['teslim'] = $teslim; }
+if ($lokasyonSehir && !$alim && !$teslim) {
+    $where[] = "(i.alim_sehir = :lok1 OR i.teslim_sehir = :lok2)";
+    $params['lok1'] = $lokasyonSehir;
+    $params['lok2'] = $lokasyonSehir;
+}
 if (in_array($yukTuru, ['parsiyel','komple'])) {
     $where[] = "i.yuk_turu = :yt"; $params['yt'] = $yukTuru;
 }
@@ -63,10 +89,50 @@ require_once __DIR__ . '/includes/header.php';
     <div class="container">
         <div class="d-flex justify-between align-center mb-3" style="flex-wrap:wrap;gap:16px;">
             <div>
-                <h1 style="margin-bottom:4px;">Yük İlanları</h1>
-                <p class="text-muted mb-0"><?= number_format($toplam) ?> ilan bulundu</p>
+                <h1 style="margin-bottom:4px;">
+                    <?php if ($lokasyonSehir && !$alim && !$teslim): ?>
+                        <i class="fa-solid fa-location-dot" style="color:var(--accent);"></i>
+                        <?= e($lokasyonSehir) ?> İlanları
+                    <?php else: ?>
+                        Yük İlanları
+                    <?php endif; ?>
+                </h1>
+                <p class="text-muted mb-0">
+                    <?= number_format($toplam) ?> ilan bulundu
+                    <?php if ($lokasyonSehir && !$alim && !$teslim): ?>
+                        — <strong><?= e($lokasyonSehir) ?></strong> şehrinde alım veya teslim
+                    <?php endif; ?>
+                </p>
             </div>
         </div>
+
+        <?php if ($lokasyonAktif): ?>
+            <!-- Otomatik lokasyon banner -->
+            <div style="background:linear-gradient(135deg,var(--info-light) 0%,#E0F2FE 100%);border:1px solid var(--primary-light);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;color:var(--primary-dark);">
+                    <i class="fa-solid fa-location-dot" style="font-size:1.125rem;color:var(--accent);"></i>
+                    <span style="font-size:0.9375rem;">
+                        <strong><?= e($lokasyonSehir) ?></strong> şehrindeki ilanları otomatik gösteriyoruz.
+                    </span>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <a href="?<?= http_build_query(array_merge($_GET, ['sehir' => '', 'tum' => 1])) ?>" class="btn btn-ghost btn-sm">
+                        <i class="fa-solid fa-globe"></i> Tümünü Göster
+                    </a>
+                </div>
+            </div>
+        <?php elseif ($lokasyonSehir && !$alim && !$teslim): ?>
+            <!-- Manuel sehir filtresi banner -->
+            <div style="background:var(--bg-alt);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fa-solid fa-filter text-primary"></i>
+                    <span style="font-size:0.9375rem;"><strong><?= e($lokasyonSehir) ?></strong> şehrine göre filtrelendi</span>
+                </div>
+                <a href="?" class="btn btn-ghost btn-sm">
+                    <i class="fa-solid fa-xmark"></i> Filtreyi Kaldır
+                </a>
+            </div>
+        <?php endif; ?>
 
         <!-- Filtre -->
         <div class="card card-body mb-3">

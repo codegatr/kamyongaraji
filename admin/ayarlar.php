@@ -32,6 +32,7 @@ require_once __DIR__ . '/header.php';
             'sms' => ['fa-mobile-screen', 'SMS'],
             'odeme' => ['fa-money-bill', 'Ödeme / IBAN'],
             'entegrasyon' => ['fa-plug', 'Entegrasyonlar'],
+            'lokasyon' => ['fa-location-dot', 'Lokasyon'],
             'sistem' => ['fa-server', 'Sistem']
         ];
         foreach ($tabs as $k => $t):
@@ -157,6 +158,98 @@ require_once __DIR__ . '/header.php';
                 <div class="a-form-group">
                     <label class="a-label">WhatsApp Numarası</label>
                     <input type="text" name="whatsapp_numara" class="a-input" value="<?= e(ayar('whatsapp_numara')) ?>" placeholder="905001234567">
+                </div>
+
+            <?php elseif ($tab === 'lokasyon'): ?>
+                <div class="a-alert a-alert-info">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <div>
+                        <strong>Lokasyon algılama sistemi:</strong> Katmanlı yaklaşım kullanılır —
+                        <strong>1)</strong> Kullanıcının kayıtlı şehir tercihi (cookie),
+                        <strong>2)</strong> Profil şehri (giriş yaptıysa),
+                        <strong>3)</strong> IP'den GeoIP ile otomatik tespit,
+                        <strong>4)</strong> Varsayılan (tüm Türkiye).
+                    </div>
+                </div>
+
+                <div class="a-form-group">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" name="lokasyon_geoip_aktif" value="1" <?= ayar('lokasyon_geoip_aktif', 1)?'checked':'' ?>>
+                        <div>
+                            <strong>GeoIP Aktif</strong><br>
+                            <small style="color:var(--a-text-muted);">IP'den otomatik şehir tespiti yapılsın (kullanıcı manuel seçmediyse)</small>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="a-form-group">
+                    <label class="a-label">GeoIP Servisi</label>
+                    <select name="lokasyon_geoip_servis" class="a-select" style="max-width:400px;">
+                        <option value="ip-api" <?= ayar('lokasyon_geoip_servis', 'ip-api')==='ip-api'?'selected':'' ?>>ip-api.com (Önerilen — 45 req/dk, kayıt gerekmez)</option>
+                        <option value="ipapi-co" <?= ayar('lokasyon_geoip_servis')==='ipapi-co'?'selected':'' ?>>ipapi.co (1000 req/gün, kayıt gerekmez)</option>
+                    </select>
+                    <small style="color:var(--a-text-muted);font-size:0.8125rem;">GeoIP sonuçları 30 gün cache'lenir, aynı IP tekrar sorulmaz.</small>
+                </div>
+
+                <div class="a-form-group">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" name="lokasyon_goster_banner" value="1" <?= ayar('lokasyon_goster_banner', 1)?'checked':'' ?>>
+                        <div>
+                            <strong>Ana Sayfada Lokasyon Banner'ı Göster</strong><br>
+                            <small style="color:var(--a-text-muted);">"Konya şehrindeki ilanları gösteriyoruz" banner'ı gösterilsin mi?</small>
+                        </div>
+                    </label>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--a-border);margin:20px 0;">
+
+                <h4 style="margin-bottom:14px;"><i class="fa-solid fa-chart-line"></i> İstatistikler</h4>
+
+                <?php
+                try {
+                    $cacheCount = (int)(db_fetch("SELECT COUNT(*) as c FROM kg_ip_cache")['c'] ?? 0);
+                    $validCount = (int)(db_fetch("SELECT COUNT(*) as c FROM kg_ip_cache WHERE gecerlilik > NOW()")['c'] ?? 0);
+                    $topSehirler = db_fetch_all("SELECT sehir, COUNT(*) as c FROM kg_ip_cache WHERE sehir IS NOT NULL GROUP BY sehir ORDER BY c DESC LIMIT 5");
+                } catch (Exception $e) {
+                    $cacheCount = 0; $validCount = 0; $topSehirler = [];
+                }
+                ?>
+
+                <div class="a-grid a-grid-3" style="gap:14px;">
+                    <div class="a-stat primary">
+                        <div class="a-stat-icon"><i class="fa-solid fa-database"></i></div>
+                        <div class="a-stat-label">Toplam IP Cache</div>
+                        <div class="a-stat-value"><?= number_format($cacheCount) ?></div>
+                    </div>
+                    <div class="a-stat success">
+                        <div class="a-stat-icon"><i class="fa-solid fa-check"></i></div>
+                        <div class="a-stat-label">Geçerli Cache</div>
+                        <div class="a-stat-value"><?= number_format($validCount) ?></div>
+                    </div>
+                    <div class="a-stat accent">
+                        <div class="a-stat-icon"><i class="fa-solid fa-city"></i></div>
+                        <div class="a-stat-label">Farklı Şehir</div>
+                        <div class="a-stat-value"><?= count($topSehirler) ?></div>
+                    </div>
+                </div>
+
+                <?php if (!empty($topSehirler)): ?>
+                <div style="margin-top:18px;">
+                    <strong style="font-size:0.875rem;color:var(--a-text-muted);">En Çok Ziyaret Edilen Şehirler:</strong>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                        <?php foreach ($topSehirler as $ts): ?>
+                            <span class="a-badge a-badge-primary">
+                                <?= e($ts['sehir']) ?> (<?= $ts['c'] ?>)
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div style="margin-top:20px;">
+                    <button type="button" class="a-btn a-btn-outline a-btn-sm" onclick="if(confirm('IP cache temizlensin mi? Bir sonraki ziyarette tekrar sorgulanacak.')) { fetch('<?= SITE_URL ?>/admin/lokasyon-cache-temizle.php?csrf=<?= csrf_token() ?>', {method:'POST', credentials:'same-origin'}).then(()=>location.reload()); }">
+                        <i class="fa-solid fa-broom"></i> IP Cache'i Temizle
+                    </button>
                 </div>
 
             <?php elseif ($tab === 'sistem'): ?>

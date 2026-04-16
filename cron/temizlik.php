@@ -33,6 +33,14 @@ try {
     $silinen = db()->exec("DELETE FROM kg_sms_dogrulama WHERE kayit_tarihi < DATE_SUB(NOW(), INTERVAL 3 DAY)");
     $log[] = "Eski SMS kayitlari silindi: $silinen";
 
+    // 2b. Suresi dolan IP cache kayitlarini sil
+    try {
+        $silinen = db()->exec("DELETE FROM kg_ip_cache WHERE gecerlilik < NOW()");
+        $log[] = "Suresi dolan IP cache silindi: $silinen";
+    } catch (Exception $e) {
+        $log[] = "IP cache temizlik atlandi (tablo yok): " . $e->getMessage();
+    }
+
     // 3. Eski bildirimleri sil (90 gunden eski ve okundu)
     $silinen = db()->exec("DELETE FROM kg_bildirimler WHERE okundu = 1 AND okundu_tarihi < DATE_SUB(NOW(), INTERVAL 90 DAY)");
     $log[] = "Eski bildirimler silindi: $silinen";

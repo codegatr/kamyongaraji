@@ -42,7 +42,7 @@ if (is_post()) {
 
         if (strlen($form['ad_soyad']) < 3) $hatalar[] = 'Ad soyad en az 3 karakter olmalıdır.';
         if (!valid_email($form['email'])) $hatalar[] = 'Geçerli bir e-posta adresi girin.';
-        if (!valid_tel($form['telefon'])) $hatalar[] = 'Geçerli bir telefon numarası girin (5XXXXXXXXX).';
+        if (!valid_tel($form['telefon'])) $hatalar[] = 'Geçerli bir cep telefonu girin. Örn: 0532 123 45 67 veya 5321234567';
         if (strlen($sifre) < 6) $hatalar[] = 'Şifre en az 6 karakter olmalıdır.';
         if ($sifre !== $sifre2) $hatalar[] = 'Şifreler uyuşmuyor.';
         if (!$sozlesme) $hatalar[] = 'Kullanım şartlarını kabul etmelisiniz.';
@@ -146,7 +146,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                     <div class="form-group">
                         <label class="form-label">Telefon <span class="req">*</span></label>
-                        <input type="tel" name="telefon" class="form-control" value="<?= e($form['telefon']) ?>" placeholder="5XXXXXXXXX" required>
+                        <input type="tel" name="telefon" class="form-control" value="<?= e($form['telefon']) ?>" placeholder="0532 123 45 67" required>
                     </div>
                 </div>
 

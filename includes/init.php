@@ -10,6 +10,7 @@ if (!ob_get_level()) ob_start();
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/location.php';
 
 // Bakim modu kontrolu
 if ((int)ayar('bakim_modu', 0) === 1 && !admin_mi()) {
