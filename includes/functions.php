@@ -164,21 +164,42 @@ function flash_render(): string {
  * Rate limit kontrol
  */
 function rate_limit(string $key, int $maxRequests = 10, int $windowSeconds = 60): bool {
+    // Admin her zaman bypass (test ve gercek kullanim rahat olsun)
+    if (function_exists('admin_mi') && admin_mi()) return true;
+
     $ip = get_ip();
+    // Kullanici giris yapmissa IP+user_id kombinasyonu, yoksa sadece IP
+    $userId = $_SESSION['user_id'] ?? 0;
+    $identifier = $userId ? "u{$userId}" : "ip{$ip}";
+
     try {
         // Eski kayitlari temizle
         db_query("DELETE FROM kg_rate_limit WHERE kayit_tarihi < DATE_SUB(NOW(), INTERVAL :w SECOND)",
                  ['w' => $windowSeconds]);
-        // Mevcut sayim
+        // Mevcut sayim (user + key kombinasyonu)
         $count = db_count('kg_rate_limit', 'anahtar = :k AND ip = :i',
-                          ['k' => $key, 'i' => $ip]);
+                          ['k' => $key, 'i' => $identifier]);
         if ($count >= $maxRequests) return false;
         // Yeni kayit ekle
-        db_insert('kg_rate_limit', ['anahtar' => $key, 'ip' => $ip]);
+        db_insert('kg_rate_limit', ['anahtar' => $key, 'ip' => $identifier]);
         return true;
     } catch (Exception $e) {
-        return true; // Hata durumunda engellem
+        return true; // Hata durumunda engelleme
     }
+}
+
+/**
+ * Admin icin rate limit resetleme - test/destek durumlari icin
+ */
+function rate_limit_reset(string $key, ?int $userId = null): void {
+    try {
+        if ($userId) {
+            db_query("DELETE FROM kg_rate_limit WHERE anahtar = :k AND ip = :i",
+                     ['k' => $key, 'i' => "u{$userId}"]);
+        } else {
+            db_query("DELETE FROM kg_rate_limit WHERE anahtar = :k", ['k' => $key]);
+        }
+    } catch (Exception $e) {}
 }
 
 /**

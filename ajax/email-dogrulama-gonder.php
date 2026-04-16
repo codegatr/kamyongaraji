@@ -5,9 +5,16 @@ if (!is_post()) json_error('Geçersiz istek', 405);
 if (!csrf_verify(post('csrf_token'))) json_error('Güvenlik doğrulaması başarısız');
 if (!giris_yapmis()) json_error('Giriş yapmalısınız', 401);
 
-// Rate limit: 15 dakikada 3 deneme (spam engeli)
-if (!rate_limit('email_dogrulama', 3, 900)) {
-    json_error('Çok fazla istek. Lütfen 15 dakika sonra tekrar deneyin.');
+// Rate limit - admin bypass
+if (!admin_mi()) {
+    // Kisa ara: ayni kullanici 60 saniyede 1 kere (cift tiklama engeli)
+    if (!rate_limit('email_dogrulama_kisa', 1, 60)) {
+        json_error('Az önce gönderildi. Lütfen bir dakika bekleyin ve spam klasörünü kontrol edin.');
+    }
+    // Gunluk limit: 10 deneme (spam/DDoS engeli)
+    if (!rate_limit('email_dogrulama_gun', 10, 86400)) {
+        json_error('Günlük doğrulama maili sınırına ulaştınız. Yarın tekrar deneyin veya destek ile iletişime geçin.');
+    }
 }
 
 $user = db_fetch("SELECT id, email, ad_soyad, email_dogrulandi FROM kg_users WHERE id = :id", ['id' => $_SESSION['user_id']]);
